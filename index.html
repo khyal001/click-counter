@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>عداد الضغطات الإلكتروني</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --danger: #ef4444;
+    --text: #f8fafc;
+    --muted: #94a3b8;
+  }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1e3a5f 0%, var(--bg) 60%);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 16px 40px;
+    user-select: none;
+  }
+  .container { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 14px; }
+
+  header { text-align: center; margin-top: 8px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+
+  .counter-card {
+    background: var(--card);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  }
+  .counter-label { color: var(--muted); font-size: 14px; }
+  #count {
+    font-size: clamp(64px, 20vw, 110px);
+    font-weight: 800;
+    line-height: 1;
+    margin: 6px 0;
+    font-variant-numeric: tabular-nums;
+    transition: transform .1s ease;
+  }
+  #count.pop { transform: scale(1.12); color: var(--accent); }
+  .stats { display: flex; justify-content: center; gap: 18px; color: var(--muted); font-size: 13px; }
+  .stats b { color: var(--text); }
+
+  /* الزر الكبير — يحتل نصف الشاشة */
+  #tapBtn {
+    width: 100%;
+    min-height: 45vh;
+    font-size: clamp(28px, 8vw, 44px);
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dark) 100%);
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    box-shadow: 0 12px 0 #14532d, 0 20px 40px rgba(34,197,94,.35);
+    touch-action: manipulation;
+    transition: transform .06s ease, box-shadow .06s ease, filter .15s;
+  }
+  #tapBtn:active {
+    transform: translateY(8px) scale(.99);
+    box-shadow: 0 4px 0 #14532d, 0 10px 20px rgba(34,197,94,.3);
+    filter: brightness(1.05);
+  }
+  #tapBtn .sub { display: block; font-size: 15px; font-weight: 400; opacity: .9; margin-top: 8px; }
+
+  .controls { display: flex; gap: 10px; }
+  .controls button {
+    flex: 1;
+    padding: 14px 10px;
+    font-size: 17px;
+    font-weight: 700;
+    border-radius: 14px;
+    border: 1px solid #334155;
+    cursor: pointer;
+    color: var(--text);
+    background: #334155;
+    touch-action: manipulation;
+  }
+  .controls button:active { transform: scale(.97); }
+  #resetBtn { background: #f59e0b; border-color: #b45309; color: #1a1000; }
+  #undoBtn { background: #334155; }
+  #undoBtn:disabled { opacity: .4; }
+
+  .history-card {
+    background: var(--card);
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 16px;
+  }
+  .history-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .history-head h2 { margin: 0; font-size: 17px; }
+  #clearAllBtn {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #clearAllBtn:disabled { opacity: .35; cursor: default; }
+  #historyList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+  #historyList li {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #0f172a; border: 1px solid #334155;
+    border-radius: 12px; padding: 10px 12px;
+    animation: slideIn .2s ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } }
+  .rec-info { display: flex; flex-direction: column; gap: 2px; text-align: right; }
+  .rec-value { font-size: 20px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .rec-date { font-size: 12px; color: var(--muted); }
+  .delBtn {
+    background: rgba(239,68,68,.12); color: #fca5a5;
+    border: 1px solid rgba(239,68,68,.4);
+    border-radius: 10px; padding: 8px 12px;
+    font-size: 14px; cursor: pointer;
+  }
+  .delBtn:active { transform: scale(.95); }
+  .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 18px 8px; border: 1px dashed #475569; border-radius: 12px; }
+
+  .hint { text-align: center; color: var(--muted); font-size: 12px; }
+  kbd { background: #334155; border-radius: 6px; padding: 1px 7px; font-family: inherit; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔢 عداد الضغطات الإلكتروني</h1>
+      <p>اضغط الزر الكبير لحساب كل ضغطة</p>
+    </header>
+
+    <div class="counter-card">
+      <div class="counter-label">العدد الحالي</div>
+      <div id="count">0</div>
+      <div class="stats">
+        <span>السجلات: <b id="totalRecords">0</b></span>
+        <span>المجموع المحفوظ: <b id="totalSaved">0</b></span>
+      </div>
+    </div>
+
+    <button id="tapBtn" aria-label="اضغط للعد">👆 اضغط للعد<span class="sub">المس للزيادة بمقدار 1</span></button>
+
+    <div class="controls">
+      <button id="undoBtn" title="تراجع عن آخر ضغطة">↩ تراجع</button>
+      <button id="resetBtn">🔄 تصفير وحفظ</button>
+    </div>
+
+    <div class="history-card">
+      <div class="history-head">
+        <h2>📋 سجل العدات قبل التصفير</h2>
+        <button id="clearAllBtn">حذف الكل</button>
+      </div>
+      <ul id="historyList"></ul>
+    </div>
+
+    <div class="hint">تلميح: يمكنك الضغط على <kbd>مسافة</kbd> من لوحة المفاتيح للعد — البيانات محفوظة في جهازك حتى بعد إغلاق الصفحة</div>
+  </div>
+
+<script>
+(function () {
+  const LS_COUNT = "clickCounter_count";
+  const LS_HISTORY = "clickCounter_history";
+
+  let count = parseInt(localStorage.getItem(LS_COUNT) || "0", 10) || 0;
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem(LS_HISTORY) || "[]"); if (!Array.isArray(history)) history = []; } catch (e) { history = []; }
+
+  const countEl = document.getElementById("count");
+  const listEl = document.getElementById("historyList");
+  const tapBtn = document.getElementById("tapBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const undoBtn = document.getElementById("undoBtn");
+  const clearAllBtn = document.getElementById("clearAllBtn");
+  const totalRecordsEl = document.getElementById("totalRecords");
+  const totalSavedEl = document.getElementById("totalSaved");
+
+  function save() {
+    localStorage.setItem(LS_COUNT, String(count));
+    localStorage.setItem(LS_HISTORY, JSON.stringify(history));
+  }
+
+  function fmtDate(ts) {
+    try {
+      return new Date(ts).toLocaleString("ar", { dateStyle: "medium", timeStyle: "short" });
+    } catch (e) { return new Date(ts).toLocaleString(); }
+  }
+
+  function render() {
+    countEl.textContent = count;
+    undoBtn.disabled = count <= 0;
+    totalRecordsEl.textContent = history.length;
+    totalSavedEl.textContent = history.reduce((s, r) => s + (r.value || 0), 0);
+    clearAllBtn.disabled = history.length === 0;
+
+    listEl.innerHTML = "";
+    if (history.length === 0) {
+      const div = document.createElement("div");
+      div.className = "empty";
+      div.textContent = "لا توجد سجلات بعد — اضغط ثم زر «تصفير وحفظ» لحفظ أول قراءة";
+      listEl.appendChild(div);
+      return;
+    }
+    history.forEach(function (rec) {
+      const li = document.createElement("li");
+
+      const info = document.createElement("div");
+      info.className = "rec-info";
+      const v = document.createElement("span");
+      v.className = "rec-value";
+      v.textContent = "🔢 " + rec.value;
+      const d = document.createElement("span");
+      d.className = "rec-date";
+      d.textContent = fmtDate(rec.id);
+      info.appendChild(v);
+      info.appendChild(d);
+
+      const del = document.createElement("button");
+      del.className = "delBtn";
+      del.textContent = "🗑 حذف";
+      del.setAttribute("aria-label", "حذف السجل " + rec.value);
+      del.onclick = function () { deleteOne(rec.id); };
+
+      li.appendChild(info);
+      li.appendChild(del);
+      listEl.appendChild(li);
+    });
+  }
+
+  function pop() {
+    countEl.classList.remove("pop");
+    void countEl.offsetWidth;
+    countEl.classList.add("pop");
+    setTimeout(function () { countEl.classList.remove("pop"); }, 130);
+  }
+
+  function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+  function increment() {
+    count++;
+    pop();
+    vibrate(15);
+    save();
+    render();
+  }
+
+  function undo() {
+    if (count > 0) { count--; save(); render(); }
+  }
+
+  function resetAndSave() {
+    if (count === 0) return;
+    history.unshift({ id: Date.now(), value: count });
+    count = 0;
+    save();
+    render();
+  }
+
+  function deleteOne(id) {
+    history = history.filter(function (r) { return r.id !== id; });
+    save();
+    render();
+  }
+
+  function clearAll() {
+    if (history.length === 0) return;
+    if (confirm("هل أنت متأكد من حذف جميع السجلات؟")) {
+      history = [];
+      save();
+      render();
+    }
+  }
+
+  tapBtn.addEventListener("click", increment);
+  undoBtn.addEventListener("click", undo);
+  resetBtn.addEventListener("click", resetAndSave);
+  clearAllBtn.addEventListener("click", clearAll);
+
+  document.addEventListener("keydown", function (e) {
+    if (e.code === "Space" || e.code === "Enter") {
+      if (document.activeElement === clearAllBtn) return;
+      e.preventDefault();
+      increment();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
